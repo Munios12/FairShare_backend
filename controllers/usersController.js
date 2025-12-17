@@ -98,7 +98,7 @@ exports.login = async (req, res) => {
     }
 
     const tokenPayload = {
-      id: user.id_usuario,
+      id: user.id,
       email: user.email,
       nombre: user.nombre_usuario,
     };

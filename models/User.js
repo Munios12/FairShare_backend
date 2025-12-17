@@ -1,10 +1,11 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
+const GroupMember = require("./GroupMember");
 
 const User = sequelize.define(
   "User",
   {
-    id_usuario: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
@@ -35,5 +36,15 @@ const User = sequelize.define(
     timestamps: false,
   }
 );
+
+User.hasMany(GroupMember, {
+  foreignKey: "usuario_id",
+  as: "groupMemberships",
+});
+
+GroupMember.belongsTo(User, {
+  foreignKey: "usuario_id",
+  as: "usuario",
+});
 
 module.exports = User;

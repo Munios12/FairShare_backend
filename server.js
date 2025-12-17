@@ -24,7 +24,7 @@ async function start() {
     await testConnection({ retries: 2 });
 
     // Sincronizar modelos (en dev). En producción usa migraciones.
-    await sequelize.sync({ alter: true }); // o { force: false }
+    await sequelize.sync();
     console.log("✅ Base de datos conectada y sincronizada.");
 
     app.listen(PORT, () => {

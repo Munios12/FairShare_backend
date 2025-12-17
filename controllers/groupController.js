@@ -1,9 +1,10 @@
 const { Op } = require("sequelize");
 const Group = require("../models/Group");
+const GroupMember = require("../models/GroupMember");
 
 // Nota: en este punto aún no existe la tabla intermedia de membresías.
 // Se asume temporalmente que cada grupo pertenece al usuario autenticado
-// a través de un campo user_id en la tabla groups. Ajusta cuando tengas
+// a través de un campo usuario_id en la tabla grupos. Ajusta cuando tengas
 // la tabla group_members.
 
 exports.getAllGroupsByUser = async (req, res) => {
@@ -17,9 +18,27 @@ exports.getAllGroupsByUser = async (req, res) => {
       });
     }
 
+    const memberships = await GroupMember.findAll({
+      where: { usuario_id: userId },
+      attributes: ["grupo_id"],
+      raw: true,
+    });
+
+    if (!memberships.length) {
+      return res.status(200).json({
+        status: "success",
+        result: 0,
+        data: {
+          groups: [],
+        },
+      });
+    }
+
+    const groupIds = [...new Set(memberships.map((m) => m.grupo_id))];
+
     const groups = await Group.findAll({
       where: {
-        user_id: userId,
+        id: groupIds,
       },
       order: [["ultima_actualizacion", "DESC"]],
     });
@@ -60,7 +79,13 @@ exports.createGroup = async (req, res) => {
 
     const group = await Group.create({
       nombre_grupo: nombre_grupo.trim(),
-      user_id: userId,
+      usuario_id: userId,
+    });
+
+    await GroupMember.create({
+      grupo_id: group.id,
+      usuario_id: userId,
+      role: "admin",
     });
 
     res.status(201).json({
@@ -89,12 +114,21 @@ exports.getGroupByID = async (req, res) => {
       });
     }
 
-    const group = await Group.findOne({
+    const membership = await GroupMember.findOne({
       where: {
-        id,
-        user_id: userId,
+        grupo_id: id,
+        usuario_id: userId,
       },
     });
+
+    if (!membership) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Grupo no encontrado o sin acceso.",
+      });
+    }
+
+    const group = await Group.findByPk(id);
 
     if (!group) {
       return res.status(404).json({
