@@ -5,6 +5,7 @@ const cors = require("cors");
 
 //Routes
 const usersRoutes = require("./routes/usersRoutes");
+const groupRoutes = require("./routes/groupRoutes");
 
 const { sequelize, testConnection } = require("./config/database");
 
@@ -12,11 +13,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.use("/api/users", usersRoutes);
-
-// Rutas de ejemplo (descomenta y adapta)
-// const usersRouter = require('./routes/users');
-// app.use('/users', usersRouter);
+app.use("/api/users", usersRoutes); // *********** Rutas de usuarios
+app.use("/api/groups", groupRoutes); // *********** Rutas de grupos
 
 const PORT = Number(process.env.PORT) || 5000;
 
