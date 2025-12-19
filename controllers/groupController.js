@@ -188,7 +188,7 @@ export async function getGroupByID(req, res) {
       });
     }
 
-    // ✅ OBTENER GASTOS RECIENTES DEL GRUPO
+    // OBTENER GASTOS RECIENTES DEL GRUPO
     const Expense = (await import("../models/Expense.js")).default;
     
     const recentExpenses = await Expense.findAll({
@@ -197,7 +197,7 @@ export async function getGroupByID(req, res) {
       order: [["fecha_gasto", "DESC"]],
     });
 
-    // ✅ OBTENER INFO DEL PAGADOR PARA CADA GASTO
+    // OBTENER INFO DEL PAGADOR PARA CADA GASTO
     const expensesWithPayer = await Promise.all(
       recentExpenses.map(async (expense) => {
         const payer = await User.findByPk(expense.pagador_id, {
@@ -210,6 +210,8 @@ export async function getGroupByID(req, res) {
           cantidad_total: parseFloat(expense.cantidad_total),
           moneda: expense.moneda,
           fecha_gasto: expense.fecha_gasto,
+          grupo_id: expense.grupo_id,  // ✅ AÑADIR ESTO
+          pagador_id: expense.pagador_id,  // ✅ AÑADIR ESTO
           pagador: payer ? {
             id: payer.id,
             nombre_usuario: payer.nombre_usuario,

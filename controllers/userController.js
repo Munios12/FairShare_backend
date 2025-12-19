@@ -202,12 +202,11 @@ export async function getProfile(req, res) {
 }
 
 // UPDATE AVATAR
-// UPDATE AVATAR
 export async function updateAvatar(req, res) {
   try {
     console.log("🎨 updateAvatar llamado");
-    console.log("👤 req.user:", req.user); // ✅ Debug
-    console.log("📦 req.body:", req.body); // ✅ Debug
+    console.log("👤 req.user:", req.user);
+    console.log("📦 req.body:", req.body);
     
     const userId = req.user?.id;
     const { color_avatar } = req.body;
@@ -230,7 +229,7 @@ export async function updateAvatar(req, res) {
       data: { user: sanitizeUser(user) },
     });
   } catch (err) {
-    console.error("❌ Error en updateAvatar:", err.message); // ✅ Debug
+    console.error("❌ Error en updateAvatar:", err.message);
     res.status(500).json({ message: "Error al actualizar el avatar", error: err.message });
   }
 }
@@ -282,7 +281,6 @@ export async function updatePassword(req, res) {
       });
     }
 
-    // Validar longitud mínima de la nueva contraseña
     if (newPassword.length < 6) {
       return res.status(400).json({ 
         message: "La nueva contraseña debe tener al menos 6 caracteres" 
@@ -294,7 +292,6 @@ export async function updatePassword(req, res) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    // Verificar contraseña actual
     const passwordMatches = await bcrypt.compare(
       currentPassword,
       user.password_usuario
@@ -306,7 +303,6 @@ export async function updatePassword(req, res) {
       });
     }
 
-    // Nueva contraseña
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password_usuario = hashedPassword;
     await user.save();
@@ -349,7 +345,6 @@ export async function deleteAccount(req, res) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    // Verificar contraseña
     const passwordMatches = await bcrypt.compare(
       password,
       user.password_usuario
@@ -361,7 +356,6 @@ export async function deleteAccount(req, res) {
       });
     }
 
-    // Eliminar usuario 
     await user.destroy();
 
     console.log("✅ Usuario eliminado exitosamente");
@@ -397,7 +391,7 @@ export async function getDashboardData(req, res) {
     const Expense = (await import("../models/Expense.js")).default;
     const ExpenseShared = (await import("../models/ExpenseShared.js")).default;
 
-    //  Obtener grupos del usuario
+    // Obtener grupos del usuario
     const memberships = await GroupMember.findAll({
       where: { usuario_id: userId },
       attributes: ["grupo_id"],
@@ -408,7 +402,7 @@ export async function getDashboardData(req, res) {
       ? [...new Set(memberships.map((m) => m.grupo_id))]
       : [];
 
-    //  Obtener información de grupos
+    // Obtener información de grupos
     const groups = groupIds.length > 0
       ? await Group.findAll({
           where: { id: groupIds },
@@ -416,8 +410,8 @@ export async function getDashboardData(req, res) {
         })
       : [];
 
-    //  Obtener gastos donde el usuario es pagador
-    const expensesPaid = groupIds.length > 0
+    // Obtener gastos de grupos donde el usuario es pagador
+    const expensesPaidInGroups = groupIds.length > 0
       ? await Expense.findAll({
           where: { 
             pagador_id: userId,
@@ -427,28 +421,46 @@ export async function getDashboardData(req, res) {
         })
       : [];
 
-    //  Calcular total gastado
-    const totalGastado = expensesPaid.reduce(
+    // Obtener gastos personales del usuario
+    const personalExpenses = await Expense.findAll({
+      where: {
+        pagador_id: userId,
+        grupo_id: null  // Gastos personales
+      },
+      raw: true,
+    });
+
+    // Calcular total gastado (grupos + personales)
+    const totalGastadoGrupos = expensesPaidInGroups.reduce(
       (sum, e) => sum + parseFloat(e.cantidad_total || 0),
       0
     );
 
-    //  Calcular balance (simplificado)
+    const totalGastadoPersonal = personalExpenses.reduce(
+      (sum, e) => sum + parseFloat(e.cantidad_total || 0),
+      0
+    );
+
+    const totalGastado = totalGastadoGrupos + totalGastadoPersonal;
+
+    // Calcular balance (simplificado por ahora)
     let totalTeDeben = 0;
     let totalDebes = 0;
-
     const balance = totalTeDeben - totalDebes;
 
-    //  Obtener gastos recientes
-    const recentExpenses = groupIds.length > 0
-      ? await Expense.findAll({
-          where: { grupo_id: groupIds },
-          limit: 10,
-          order: [["fecha_gasto", "DESC"]],
-        })
-      : [];
+    // Obtener gastos recientes (GRUPOS + PERSONALES)
+    const allRecentExpenses = await Expense.findAll({
+      where: {
+        [Op.or]: [
+          { grupo_id: groupIds.length > 0 ? groupIds : [] },  // Gastos de grupos
+          { pagador_id: userId, grupo_id: null }  // Gastos personales
+        ]
+      },
+      limit: 10,
+      order: [["fecha_gasto", "DESC"]],
+    });
 
-    //  Formatear grupos con último gasto
+    // Formatear grupos con último gasto
     const formattedGroups = await Promise.all(
       groups.map(async (group) => {
         const membersCount = await GroupMember.count({
@@ -475,12 +487,21 @@ export async function getDashboardData(req, res) {
       })
     );
 
-    //  Formatear gastos recientes con pagador
+    // Formatear gastos recientes (personal/grupo)
     const formattedExpenses = await Promise.all(
-      recentExpenses.map(async (expense) => {
+      allRecentExpenses.map(async (expense) => {
         const pagador = await User.findByPk(expense.pagador_id, {
           attributes: ["id", "nombre_usuario", "avatar_color"],
         });
+
+        // Obtener nombre del grupo si existe
+        let grupoNombre = null;
+        if (expense.grupo_id) {
+          const grupo = await Group.findByPk(expense.grupo_id, {
+            attributes: ["nombre_grupo"],
+          });
+          grupoNombre = grupo?.nombre_grupo;
+        }
 
         return {
           id: expense.id,
@@ -488,6 +509,8 @@ export async function getDashboardData(req, res) {
           cantidad_total: parseFloat(expense.cantidad_total),
           moneda: expense.moneda,
           fecha_gasto: expense.fecha_gasto,
+          es_personal: expense.grupo_id === null,  
+          grupo_nombre: grupoNombre,
           pagador: pagador ? {
             id: pagador.id,
             nombre_usuario: pagador.nombre_usuario,
@@ -501,6 +524,8 @@ export async function getDashboardData(req, res) {
       status: "success",
       data: {
         total_gastado: parseFloat(totalGastado.toFixed(2)),
+        total_gastado_grupos: parseFloat(totalGastadoGrupos.toFixed(2)),
+        total_gastado_personal: parseFloat(totalGastadoPersonal.toFixed(2)),
         grupos_activos: groups.length,
         balance: {
           te_deben: parseFloat(totalTeDeben.toFixed(2)),

@@ -381,3 +381,166 @@ export const deleteExpense = async (req, res) => {
     });
   }
 };
+
+// POST - CREAR GASTO PERSONAL
+export const createPersonalExpense = async (req, res) => {
+  try {
+    const { descripcion, cantidad_total } = req.body;
+    const userId = req.user.id;
+
+    console.log("💳 Crear gasto personal:", { descripcion, cantidad_total, userId });
+
+    // Validaciones
+    if (!descripcion || !cantidad_total) {
+      return res.status(400).json({ 
+        status: "fail",
+        message: "Faltan datos requeridos" 
+      });
+    }
+
+    if (parseFloat(cantidad_total) <= 0) {
+      return res.status(400).json({ 
+        status: "fail",
+        message: "La cantidad debe ser mayor a 0" 
+      });
+    }
+
+    // Crear el gasto personal (sin grupo_id)
+    const expense = await Expense.create({
+      grupo_id: null,  // ✅ NULL para gastos personales
+      pagador_id: userId,
+      descripcion,
+      cantidad_total: parseFloat(cantidad_total),
+      moneda: "EUR",
+      fecha_gasto: new Date(),
+      fecha_creacion: new Date(),
+    });
+
+    // Crear registro en gastos_compartidos (solo el usuario)
+    await ExpenseShared.create({
+      gasto_id: expense.id,
+      usuario_id: userId,
+      cantidad: parseFloat(cantidad_total),
+    });
+
+    console.log("✅ Gasto personal creado exitosamente:", expense.id);
+
+    return res.status(201).json({ 
+      status: "success",
+      data: {
+        expense: {
+          id: expense.id,
+          descripcion: expense.descripcion,
+          cantidad_total: expense.cantidad_total,
+          moneda: expense.moneda,
+          fecha_gasto: expense.fecha_gasto,
+          es_personal: true,
+        }
+      }
+    });
+  } catch (err) {
+    console.error("❌ Error al crear gasto personal:", err.message);
+    res.status(500).json({ 
+      status: "error",
+      message: "Error interno del servidor",
+      error: err.message 
+    });
+  }
+};
+
+// GET - OBTENER GASTOS PERSONALES DEL USUARIO
+export const getPersonalExpenses = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    console.log("💳 Obtener gastos personales del usuario:", userId);
+
+    // Obtener gastos personales (grupo_id = null)
+    const personalExpenses = await Expense.findAll({
+      where: { 
+        pagador_id: userId,
+        grupo_id: null  // Solo gastos sin grupo
+      },
+      order: [["fecha_gasto", "DESC"]],
+    });
+
+    const formattedExpenses = personalExpenses.map(expense => ({
+      id: expense.id,
+      descripcion: expense.descripcion,
+      cantidad_total: parseFloat(expense.cantidad_total),
+      moneda: expense.moneda,
+      fecha_gasto: expense.fecha_gasto,
+      es_personal: true,
+    }));
+
+    // Calcular total
+    const totalGastado = formattedExpenses.reduce(
+      (sum, e) => sum + e.cantidad_total, 
+      0
+    );
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        gastos: formattedExpenses,
+        total_gastado: parseFloat(totalGastado.toFixed(2)),
+      },
+    });
+  } catch (err) {
+    console.error("❌ Error al obtener gastos personales:", err.message);
+    res.status(500).json({
+      status: "error",
+      message: "Error interno del servidor",
+      error: err.message,
+    });
+  }
+};
+
+// DELETE - ELIMINAR GASTO PERSONAL
+export const deletePersonalExpense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    console.log("🗑️ Eliminar gasto personal:", id);
+
+    // Verificar que el gasto existe y es personal
+    const expense = await Expense.findByPk(id);
+    if (!expense) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Gasto no encontrado",
+      });
+    }
+
+    // Verificar que es del usuario y es personal
+    if (expense.pagador_id !== userId || expense.grupo_id !== null) {
+      return res.status(403).json({
+        status: "fail",
+        message: "No tienes permiso para eliminar este gasto",
+      });
+    }
+
+    // Eliminar participantes primero
+    await ExpenseShared.destroy({
+      where: { gasto_id: id },
+    });
+
+    // Eliminar el gasto
+    await expense.destroy();
+
+    console.log("✅ Gasto personal eliminado exitosamente");
+
+    return res.status(200).json({
+      status: "success",
+      message: "Gasto eliminado correctamente",
+    });
+  } catch (err) {
+    console.error("❌ Error al eliminar gasto personal:", err.message);
+    res.status(500).json({
+      status: "error",
+      message: "Error interno del servidor",
+      error: err.message,
+    });
+  }
+};

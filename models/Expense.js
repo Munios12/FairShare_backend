@@ -9,31 +9,39 @@ const Expense = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    grupo_id: {  
+    grupo_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,  // ✅ CAMBIO: Permite NULL para gastos personales
+      references: {
+        model: "grupos",
+        key: "id",
+      },
+    },
+    pagador_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
     },
-    pagador_id: {  
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    descripcion: {  
+    descripcion: {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    cantidad_total: {  
+    cantidad_total: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
-    moneda: {  
+    moneda: {
       type: DataTypes.STRING(10),
       defaultValue: "EUR",
     },
-    fecha_gasto: {  
+    fecha_gasto: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    fecha_creacion: {  
+    fecha_creacion: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
