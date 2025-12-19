@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
 
 const GroupMember = sequelize.define(
   "GroupMember",
@@ -26,7 +26,6 @@ const GroupMember = sequelize.define(
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
-      field: "fecha_añadido",
     },
   },
   {
@@ -35,4 +34,4 @@ const GroupMember = sequelize.define(
   }
 );
 
-module.exports = GroupMember;
+export default GroupMember;

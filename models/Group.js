@@ -1,6 +1,5 @@
-const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database");
-const GroupMember = require("./GroupMember");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
 
 const Group = sequelize.define(
   "Group",
@@ -43,14 +42,4 @@ const Group = sequelize.define(
   }
 );
 
-Group.hasMany(GroupMember, {
-  foreignKey: "grupo_id",
-  as: "miembros",
-});
-
-GroupMember.belongsTo(Group, {
-  foreignKey: "grupo_id",
-  as: "grupo",
-});
-
-module.exports = Group;
+export default Group;

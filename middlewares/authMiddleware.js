@@ -1,27 +1,32 @@
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
 
-module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      status: "fail",
-      message: "Token de autenticación requerido.",
-    });
-  }
-
-  const token = authHeader.split(" ")[1];
-
+export async function authMiddleware(req, res, next) {
   try {
+    console.log("🔐 JWT_SECRET cargado:", JWT_SECRET); // ✅ Debug
+    console.log("📨 Authorization header:", req.headers.authorization); // ✅ Debug
+    
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    console.log("🎫 Token extraído:", token); // ✅ Debug
+
+    if (!token)
+      return res.status(401).json({ message: "Token requerido" });
+
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    console.log("✅ Token decodificado:", decoded); // ✅ Debug
+
+    const user = await User.findByPk(decoded.id);
+
+    if (!user)
+      return res.status(401).json({ message: "Usuario no encontrado" });
+
+    req.user = user;
     next();
-  } catch (error) {
-    return res.status(401).json({
-      status: "fail",
-      message: "Token inválido o expirado.",
-    });
+  } catch (err) {
+    console.error("❌ Error en authMiddleware:", err.message); // ✅ Debug
+    return res.status(401).json({ message: "Token inválido" });
   }
-};
+}

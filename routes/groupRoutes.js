@@ -1,11 +1,28 @@
-const express = require("express");
-const authMiddleware = require("../middlewares/authMiddleware");
-const groupController = require("../controllers/groupController");
-const router = express.Router();
+import { Router } from "express";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
+import {
+  getAllGroupsByUser,
+  createGroup,
+  getGroupByID,
+  addMemberToGroup,
+  deleteGroup,  
+} from "../controllers/groupController.js";
 
-router.get("/", authMiddleware, groupController.getAllGroupsByUser); //Obtener todos los grupos por Usuario
-router.post("/", authMiddleware, groupController.createGroup); //Crear un nuevo grupo
+const router = Router();
 
-router.get("/:id", authMiddleware, groupController.getGroupByID); //Obtener un grupo por ID
+// Obtener todos los grupos del usuario autenticado
+router.get("/", authMiddleware, getAllGroupsByUser);
 
-module.exports = router;
+// Crear un nuevo grupo
+router.post("/", authMiddleware, createGroup);
+
+// Obtener un grupo por ID
+router.get("/:id", authMiddleware, getGroupByID);
+
+// Añadir miembro al grupo 
+router.post("/:id/add-member", authMiddleware, addMemberToGroup);
+
+// Borrar grupo
+router.delete("/:id", authMiddleware, deleteGroup); 
+
+export default router;

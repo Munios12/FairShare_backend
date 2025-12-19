@@ -1,38 +1,46 @@
-// server.js
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
 
-//Routes
-const usersRoutes = require("./routes/usersRoutes");
-const groupRoutes = require("./routes/groupRoutes");
+dotenv.config();
 
-const { sequelize, testConnection } = require("./config/database");
+console.log("🔐 JWT_SECRET desde server.js:", process.env.JWT_SECRET); 
+
+import sequelize from "./config/database.js";
+import initializeAssociations from "./models/associations.js";
+import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import groupRoutes from "./routes/groupRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";  
 
 const app = express();
-app.use(express.json());
+
 app.use(cors());
+app.use(express.json());
 
-app.use("/api/users", usersRoutes); // *********** Rutas de usuarios
-app.use("/api/groups", groupRoutes); // *********** Rutas de grupos
+// Rutas base 
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/expenses", expenseRoutes);  
 
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = process.env.PORT || 5000;
 
 async function start() {
   try {
-    // Probar conexión (reintenta 2 veces si hace falta)
-    await testConnection({ retries: 2 });
+    await sequelize.authenticate();
+    console.log("DB conectada correctamente");
 
-    // Sincronizar modelos (en dev). En producción usa migraciones.
     await sequelize.sync();
-    console.log("✅ Base de datos conectada y sincronizada.");
+    console.log("Modelos sincronizados");
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-    });
+    initializeAssociations();
+
+    app.listen(PORT, () =>
+      console.log(`🚀 Servidor en http://localhost:${PORT}`)
+    );
   } catch (err) {
-    console.error("❌ Error inicializando la aplicación:", err.message || err);
-    process.exit(1);
+    console.error("ERROR INICIANDO SERVIDOR:", err);
   }
 }
 

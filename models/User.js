@@ -1,6 +1,5 @@
-const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database");
-const GroupMember = require("./GroupMember");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
 
 const User = sequelize.define(
   "User",
@@ -11,20 +10,21 @@ const User = sequelize.define(
       autoIncrement: true,
     },
     nombre_usuario: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false,
     },
     email: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false,
       unique: true,
-      validate: {
-        isEmail: true,
-      },
     },
     password_usuario: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    avatar_color: {
+      type: DataTypes.STRING(20),
+      defaultValue: "teal",
     },
     fecha_alta: {
       type: DataTypes.DATE,
@@ -37,14 +37,4 @@ const User = sequelize.define(
   }
 );
 
-User.hasMany(GroupMember, {
-  foreignKey: "usuario_id",
-  as: "groupMemberships",
-});
-
-GroupMember.belongsTo(User, {
-  foreignKey: "usuario_id",
-  as: "usuario",
-});
-
-module.exports = User;
+export default User;
