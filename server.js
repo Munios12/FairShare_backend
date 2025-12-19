@@ -11,7 +11,9 @@ import initializeAssociations from "./models/associations.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
-import expenseRoutes from "./routes/expenseRoutes.js";  
+import expenseRoutes from "./routes/expenseRoutes.js"; 
+import balanceRoutes from "./routes/balanceRoutes.js"; 
+
 
 const app = express();
 
@@ -22,7 +24,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
-app.use("/api/expenses", expenseRoutes);  
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/balance", balanceRoutes);  
 
 const PORT = process.env.PORT || 5000;
 

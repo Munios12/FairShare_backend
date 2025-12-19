@@ -210,8 +210,8 @@ export async function getGroupByID(req, res) {
           cantidad_total: parseFloat(expense.cantidad_total),
           moneda: expense.moneda,
           fecha_gasto: expense.fecha_gasto,
-          grupo_id: expense.grupo_id,  // ✅ AÑADIR ESTO
-          pagador_id: expense.pagador_id,  // ✅ AÑADIR ESTO
+          grupo_id: expense.grupo_id,  
+          pagador_id: expense.pagador_id,  
           pagador: payer ? {
             id: payer.id,
             nombre_usuario: payer.nombre_usuario,
@@ -234,7 +234,7 @@ export async function getGroupByID(req, res) {
         role: m.role,
         fecha_anadido: m.fecha_anadido,
       })),
-      gastos_recientes: expensesWithPayer,  // ✅ Ahora incluye gastos reales
+      gastos_recientes: expensesWithPayer,  
     };
 
     res.status(200).json({
@@ -392,7 +392,7 @@ export async function deleteGroup(req, res) {
       });
     }
 
-    // Eliminar el grupo (CASCADE eliminará miembros y gastos automáticamente)
+    // Eliminar el grupo 
     await group.destroy();
 
     console.log("✅ Grupo eliminado exitosamente");

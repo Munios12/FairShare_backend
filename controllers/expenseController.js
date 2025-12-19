@@ -407,7 +407,7 @@ export const createPersonalExpense = async (req, res) => {
 
     // Crear el gasto personal (sin grupo_id)
     const expense = await Expense.create({
-      grupo_id: null,  // ✅ NULL para gastos personales
+      grupo_id: null,  
       pagador_id: userId,
       descripcion,
       cantidad_total: parseFloat(cantidad_total),
@@ -459,7 +459,7 @@ export const getPersonalExpenses = async (req, res) => {
     const personalExpenses = await Expense.findAll({
       where: { 
         pagador_id: userId,
-        grupo_id: null  // Solo gastos sin grupo
+        grupo_id: null  
       },
       order: [["fecha_gasto", "DESC"]],
     });

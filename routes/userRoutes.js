@@ -26,6 +26,6 @@ router.patch("/update-password", authMiddleware, updatePassword);
 router.delete("/delete-account", authMiddleware, deleteAccount);
 
 // DASHBOARD
-router.get("/dashboard", authMiddleware, getDashboardData);  // ✅ Nueva ruta
+router.get("/dashboard", authMiddleware, getDashboardData); 
 
 export default router;

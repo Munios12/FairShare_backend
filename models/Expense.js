@@ -11,7 +11,7 @@ const Expense = sequelize.define(
     },
     grupo_id: {
       type: DataTypes.INTEGER,
-      allowNull: true,  // ✅ CAMBIO: Permite NULL para gastos personales
+      allowNull: true,  // 
       references: {
         model: "grupos",
         key: "id",
